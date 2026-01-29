@@ -10,10 +10,7 @@ import useDocusaurusContext from "@docusaurus/useDocusaurusContext";
 import ExecutionEnvironment from "@docusaurus/ExecutionEnvironment";
 import { useHistory, useLocation } from "@docusaurus/router";
 import { translate } from "@docusaurus/Translate";
-import {
-  ReactContextError,
-  useDocsPreferredVersion,
-} from "@docusaurus/theme-common";
+import { useActiveVersion } from '@docusaurus/plugin-content-docs/client';
 import { useActivePlugin } from "@docusaurus/plugin-content-docs/client";
 
 import { fetchIndexes } from "./fetchIndexes";
@@ -28,7 +25,6 @@ import {
   searchBarShortcutHint,
   searchBarPosition,
   docsPluginIdForPreferredVersion,
-  indexDocs,
   searchContextByPaths,
   hideSearchBarWithNoSearchContext,
 } from "../../utils/proxiedGenerated";
@@ -67,30 +63,13 @@ export default function SearchBar({
   const activePlugin = useActivePlugin();
   let versionUrl = baseUrl;
 
-  // For non-docs pages while using plugin-content-docs with custom ids,
-  // this will throw an error of:
-  //   > Docusaurus plugin global data not found for "docusaurus-plugin-content-docs" plugin with id "default".
-  // It seems that we can not get the correct id for non-docs pages.
-  try {
-    // The try-catch is a hack because useDocsPreferredVersion just throws an
-    // exception when versions are not used.
-    // The same hack is used in SearchPage.tsx
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    const { preferredVersion } = useDocsPreferredVersion(
-      activePlugin?.pluginId ?? docsPluginIdForPreferredVersion
-    );
-    if (preferredVersion && !preferredVersion.isLast) {
-      versionUrl = preferredVersion.path + "/";
-    }
-  } catch (e: unknown) {
-    if (indexDocs) {
-      if (e instanceof ReactContextError) {
-        /* ignore, happens when website doesn't use versions */
-      } else {
-        throw e;
-      }
-    }
+  const activeVersion = useActiveVersion(
+    activePlugin?.pluginId ?? docsPluginIdForPreferredVersion
+  );
+  if (activeVersion && !activeVersion.isLast) {
+    versionUrl = activeVersion.path + "/";
   }
+
   const history = useHistory();
   const location = useLocation();
   const searchBarRef = useRef<HTMLInputElement>(null);
